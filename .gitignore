@@ -17,7 +17,8 @@ build/
 .env.local
 
 # Output files
-output/*.mp3
+output/**/*.mp3
+output/**/*.zip
 static/*.mp3
 
 # IDE
