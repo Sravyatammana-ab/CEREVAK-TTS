@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multilingual Text-to-Speech Translator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-container {
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .result-container.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-item {
+            margin-bottom: 15px;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            color: #333;
+            font-size: 1.1em;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .audio-player {
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 4px solid #c33;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            color: #1565c0;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌍 Multilingual TTS Translator</h1>
+        <p class="subtitle">Translate text and convert it to speech in any language</p>
+
+        <div class="info-box">
+            <strong>How it works:</strong>
+            <ol style="margin-left: 20px; margin-top: 8px;">
+                <li>Enter your text (any language)</li>
+                <li>Select target language</li>
+                <li>System detects source language automatically</li>
+                <li>Text is translated and converted to speech</li>
+            </ol>
+        </div>
+
+        <form id="translationForm">
+            <div class="form-group">
+                <label for="inputText">Enter Text:</label>
+                <textarea 
+                    id="inputText" 
+                    rows="5" 
+                    placeholder="Type or paste your text here... (e.g., 'Hello, how are you?')"
+                    required
+                ></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="targetLanguage">Target Language:</label>
+                <select id="targetLanguage" required>
+                    <option value="">Select a language...</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+                Translate & Generate Speech
+            </button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #666;">Processing your request...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="result-container" id="resultContainer">
+            <h2 style="margin-bottom: 20px; color: #333;">Results</h2>
+            
+            <div class="result-item">
+                <div class="result-label">Detected Source Language:</div>
+                <div class="result-value" id="sourceLang"></div>
+            </div>
+
+            <div class="result-item">
+                <div class="result-label">Target Language:</div>
+                <div class="result-value" id="targetLang"></div>
+            </div>
+
+            <div class="result-item">
+                <div class="result-label">Translated Text:</div>
+                <div class="result-value" id="translatedText"></div>
+            </div>
+
+            <div class="result-item">
+                <div class="result-label">Audio Player:</div>
+                <audio id="audioPlayer" class="audio-player" controls>
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load languages when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadLanguages();
+        });
+
+        // Load available languages
+        async function loadLanguages() {
+            try {
+                const response = await fetch('/api/languages');
+                const languages = await response.json();
+                
+                const select = document.getElementById('targetLanguage');
+                for (const [code, name] of Object.entries(languages)) {
+                    const option = document.createElement('option');
+                    option.value = code;
+                    option.textContent = `${name} (${code})`;
+                    select.appendChild(option);
+                }
+            } catch (error) {
+                console.error('Error loading languages:', error);
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('translationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const inputText = document.getElementById('inputText').value.trim();
+            const targetLang = document.getElementById('targetLanguage').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const resultContainer = document.getElementById('resultContainer');
+
+            // Validation
+            if (!inputText || !targetLang) {
+                showError('Please enter text and select a target language.');
+                return;
+            }
+
+            // Show loading, hide results and errors
+            loading.classList.add('show');
+            resultContainer.classList.remove('show');
+            errorDiv.classList.remove('show');
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/translate-and-speak', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: inputText,
+                        target_lang: targetLang
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Display results
+                    document.getElementById('sourceLang').textContent = 
+                        `${data.source_lang_name} (${data.source_lang})`;
+                    document.getElementById('targetLang').textContent = 
+                        `${data.target_lang_name} (${data.target_lang})`;
+                    document.getElementById('translatedText').textContent = data.translated_text;
+                    
+                    // Load audio
+                    const audioPlayer = document.getElementById('audioPlayer');
+                    audioPlayer.src = data.audio_url + '?t=' + new Date().getTime();
+                    audioPlayer.load();
+                    
+                    // Show results
+                    resultContainer.classList.add('show');
+                } else {
+                    showError(data.error || 'An error occurred during translation.');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            } finally {
+                loading.classList.remove('show');
+                submitBtn.disabled = false;
+            }
+        });
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = 'Error: ' + message;
+            errorDiv.classList.add('show');
+        }
+    </script>
+</body>
+</html>
+
+

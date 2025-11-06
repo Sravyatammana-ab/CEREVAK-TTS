@@ -1,0 +1,11 @@
+streamlit>=1.39.0
+deep-translator==1.11.4
+langdetect==1.0.9
+gTTS==2.5.0
+PyPDF2==3.0.1
+python-docx==1.1.0
+openai>=1.0.0
+python-dotenv==1.0.0
+pydub>=0.25.1
+flask>=2.0.0
+flask-cors>=3.0.0
