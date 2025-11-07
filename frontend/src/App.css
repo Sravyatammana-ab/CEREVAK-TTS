@@ -8,41 +8,72 @@
 
 /* Header Section */
 .header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0rem; /* Reduced gap between logo and title */
+  gap: 1.1rem;
   margin-bottom: 3rem;
-  padding: 2rem 0;
+  padding: 1.75rem 0 1rem;
+  background: linear-gradient(180deg, #061c6e 0%, #051650 70%);
+  border: none;
+  border-radius: 0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+  backdrop-filter: none;
+  width: 100%;
 }
 
-.logo {
-  height: 7.5rem; /* Matches the font size of the title for proper alignment */
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.brand-logo {
+  height: 70px;
   width: auto;
 }
 
-.title {
-  font-size: 2.5rem;
+.brand-name {
+  font-size: 2.75rem;
   font-weight: 700;
   color: #FFFFFF;
   margin: 0;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tagline {
+  margin: 0;
+  color: #F5F6FF;
+  font-size: 1.15rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
 }
 
 /* Section Cards */
 .section-card {
-  background: #1A2B60;
-  border: 2px solid #2D2755;
-  border-radius: 16px;
+  background: rgba(10, 28, 92, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
   padding: 2rem;
   margin-bottom: 2rem;
-  box-shadow: 0 0 25px rgba(45, 39, 85, 0.8), 0 4px 15px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s ease;
+  box-shadow: 0 40px 60px rgba(3, 12, 50, 0.35);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .section-card:hover {
-  box-shadow: 0 0 35px rgba(45, 39, 85, 1), 0 6px 20px rgba(0, 0, 0, 0.4);
-  border-color: #3d3565;
-  transform: translateY(-2px);
+  box-shadow: 0 32px 55px rgba(3, 12, 50, 0.45);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-4px);
 }
 
 .section-title {
@@ -346,8 +377,29 @@
     padding: 1rem;
   }
 
-  .title {
-    font-size: 1.8rem;
+  .header {
+    padding: 1.25rem 0 0.75rem;
+    gap: 1rem;
+  }
+
+  .brand-row {
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+  }
+
+  .brand-logo {
+    height: 52px;
+  }
+
+  .brand-name {
+    font-size: 2rem;
+  }
+
+  .tagline {
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+    padding: 0.5rem 1.25rem;
   }
 
   .output-grid {
@@ -358,9 +410,6 @@
     grid-template-columns: 1fr;
   }
 
-  .logo {
-    height: 40px;
-  }
 }
 
 /* Scrollbar Styling */

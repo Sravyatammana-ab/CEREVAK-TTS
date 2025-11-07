@@ -83,10 +83,17 @@ function App() {
   return (
     <div className="app">
       {/* Header with Logo and Title */}
-      <div className="header">
-        <img src="/cerevyn_logo.png" alt="Cerevyn Logo" className="logo" />
-        <h1 className="title">CEREVAK - Multilingual Text-to-Speech Translator</h1>
-      </div>
+      <header className="header">
+        <div className="brand-row">
+          <img
+            src="/cerevyn_logo_text.png"
+            alt="Cerevyn Solutions logo"
+            className="brand-logo"
+          />
+          <h1 className="brand-name">Cerevak</h1>
+        </div>
+        <p className="tagline">Multilingual Text-to-Speech Translator</p>
+      </header>
 
       {/* Input Text Section */}
       <div className="section-card">
