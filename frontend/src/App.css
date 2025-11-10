@@ -297,6 +297,12 @@
   display: block;
 }
 
+.output-subtext {
+  color: #9AA3C1;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
 .audio-player-container {
   display: flex;
   flex-direction: column;

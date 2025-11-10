@@ -8,15 +8,25 @@ function App() {
   const [targetLanguage, setTargetLanguage] = useState('te');
   const [voiceGender, setVoiceGender] = useState('Male');
   const [ageTone, setAgeTone] = useState('Adult');
+  const [ttsEngine, setTtsEngine] = useState('indic');
   const [languages, setLanguages] = useState({});
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null);
   const [result, setResult] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [audioObjectUrl, setAudioObjectUrl] = useState(null);
 
   useEffect(() => {
     loadLanguages();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (audioObjectUrl) {
+        URL.revokeObjectURL(audioObjectUrl);
+      }
+    };
+  }, [audioObjectUrl]);
 
   const loadLanguages = async () => {
     try {
@@ -50,6 +60,11 @@ function App() {
       return;
     }
 
+    if (audioObjectUrl) {
+      URL.revokeObjectURL(audioObjectUrl);
+      setAudioObjectUrl(null);
+    }
+
     setLoading(true);
     setStatus(null);
     setResult(null);
@@ -61,10 +76,22 @@ function App() {
         inputText,
         targetLanguage,
         voiceGender,
-        ageTone
+        ageTone,
+        ttsEngine
       );
 
       if (response.success) {
+        if (response.audio_base64 && response.filename) {
+          const mimeType = response.filename.toLowerCase().endsWith('.wav') ? 'audio/wav' : 'audio/mpeg';
+          const byteString = atob(response.audio_base64);
+          const byteArray = new Uint8Array(byteString.length);
+          for (let i = 0; i < byteString.length; i += 1) {
+            byteArray[i] = byteString.charCodeAt(i);
+          }
+          const blob = new Blob([byteArray], { type: mimeType });
+          const objectUrl = URL.createObjectURL(blob);
+          setAudioObjectUrl(objectUrl);
+        }
         setResult(response);
         setStatus({ type: 'success', message: 'Audio generated successfully!' });
       } else {
@@ -79,6 +106,8 @@ function App() {
       setLoading(false);
     }
   };
+
+  const downloadLabel = result?.filename ? result.filename.split('.').pop().toUpperCase() : 'AUDIO';
 
   return (
     <div className="app">
@@ -220,6 +249,20 @@ function App() {
               <option value="Senior">Senior</option>
             </select>
           </div>
+
+          <div className="setting-group">
+            <label className="setting-label">🧠 TTS Engine</label>
+            <select
+              className="select-box"
+              value={ttsEngine}
+              onChange={(e) => setTtsEngine(e.target.value)}
+            >
+              <option value="piper">Piper </option>
+              <option value="indic">Indic-TTS </option>
+              <option value="coqui">Coqui </option>
+              <option value="openai">OpenAI TTS</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -263,25 +306,34 @@ function App() {
               <span className="output-label">Target Language: {result.target_lang_name} ({result.target_lang})</span>
               <div className="output-text">{result.translated_text}</div>
             </div>
+            {result.normalized_text && result.normalized_text !== result.translated_text && (
+              <div>
+                <span className="output-label">Normalized Text</span>
+                <div className="output-text">{result.normalized_text}</div>
+              </div>
+            )}
           </div>
 
           <div className="audio-player-container" style={{ marginTop: '2rem' }}>
             <span className="output-label">Audio Output</span>
+            {result.tts_engine && (
+              <div className="output-subtext">Engine: {result.tts_engine.toUpperCase()}</div>
+            )}
             {result.audio_url && result.filename && (
               <>
                 <audio
                   className="audio-player"
                   controls
-                  src={getAudioUrl(result.filename)}
+                  src={audioObjectUrl || getAudioUrl(result.filename)}
                 >
                   Your browser does not support the audio element.
                 </audio>
                 <a
-                  href={getDownloadUrl(result.filename)}
+                  href={audioObjectUrl || getDownloadUrl(result.filename)}
                   download={result.filename}
                   className="download-button"
                 >
-                  📥 Download Audio (MP3)
+                  📥 Download Audio ({downloadLabel})
                 </a>
               </>
             )}

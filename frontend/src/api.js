@@ -9,13 +9,24 @@ const api = axios.create({
   },
 });
 
-export const translateAndSpeak = async (text, targetLang, voiceGender, ageTone) => {
+export const translateAndSpeak = async (
+  text,
+  targetLang,
+  voiceGender,
+  ageTone,
+  ttsEngine,
+  rate = null,
+  pitch = null,
+) => {
   try {
     const response = await api.post('/api/translate-and-speak', {
       text,
       target_lang: targetLang,
       voice_gender: voiceGender,
       age_tone: ageTone,
+      tts_engine: ttsEngine,
+      rate,
+      pitch,
     });
     return response.data;
   } catch (error) {

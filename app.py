@@ -54,23 +54,24 @@ LANGUAGE_OPTIONS = {
     'Odia': 'or',
     'Punjabi': 'pa',
     'Tamil': 'ta',
-    'Telugu': 'te',
-    'Spanish': 'es',
-    'French': 'fr',
-    'German': 'de',
-    'Italian': 'it',
-    'Portuguese': 'pt',
-    'Russian': 'ru',
-    'Japanese': 'ja',
-    'Korean': 'ko',
-    'Chinese': 'zh',
-    'Arabic': 'ar',
-    'Nepali': 'ne',
-    'Sinhala': 'si'
+    'Telugu': 'te'
 }
 
 # Reverse mapping for API
 LANGUAGE_CODE_TO_NAME = {v: k for k, v in LANGUAGE_OPTIONS.items()}
+
+
+def _slugify(value: str) -> str:
+    normalized = []
+    for ch in value.lower():
+        if ch.isalnum():
+            normalized.append(ch)
+        elif ch in {' ', '-', '_'}:
+            normalized.append('-')
+    slug = ''.join(normalized).strip('-')
+    while '--' in slug:
+        slug = slug.replace('--', '-')
+    return slug or 'default'
 
 
 @app.route('/api/translate-and-speak', methods=['POST'])
@@ -82,7 +83,8 @@ def translate_and_speak():
         "text": "input text",
         "target_lang": "te",
         "voice_gender": "Male",
-        "age_tone": "Adult"
+        "age_tone": "Adult",
+        "tts_engine": "piper"
     }
     """
     try:
@@ -95,6 +97,14 @@ def translate_and_speak():
         target_lang = data.get('target_lang', '').strip().lower()
         voice_gender = data.get('voice_gender', 'Male')
         age_tone = data.get('age_tone', 'Adult')
+        tts_engine = data.get('tts_engine', 'indic')
+        rate = data.get('rate')
+        pitch = data.get('pitch')
+
+        if tts_engine:
+            tts_engine = tts_engine.strip().lower()
+        else:
+            tts_engine = 'indic'
         
         if not input_text:
             return jsonify({'error': 'No text provided'}), 400
@@ -126,24 +136,40 @@ def translate_and_speak():
         target_lang_name = LANGUAGE_CODE_TO_NAME.get(target_lang, target_lang.upper())
         
         # Get voice based on gender and age tone
+        provider = speech_service.get_provider(tts_engine)
+        if provider is None:
+            return jsonify({
+                'error': f"Unknown TTS engine '{tts_engine}'. Available options: {list(speech_service.providers.keys())}"
+            }), 400
+
         selected_voice = speech_service.get_voice_by_gender_and_age(voice_gender, age_tone)
         
         # Create hash for deduplication
-        settings_hash = f"{voice_gender}_{age_tone}"
+        settings_hash = f"{voice_gender}_{age_tone}_{tts_engine}_{selected_voice}"
         content_hash = hashlib.md5(f"{translated_text}_{target_lang}_{settings_hash}".encode()).hexdigest()[:8]
         
         # Generate unique filename
         target_lang_name_lower = target_lang_name.lower()
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"speech_{target_lang_name_lower}_{voice_gender.lower()}_{age_tone.lower()}_{selected_voice}_{timestamp}_{content_hash}.mp3"
+        gender_slug = _slugify(voice_gender)
+        age_slug = _slugify(age_tone)
+        engine_slug = _slugify(tts_engine)
+        voice_slug = _slugify(selected_voice)
+        extension = getattr(provider, 'output_extension', 'mp3')
+        filename = (
+            f"speech_{target_lang_name_lower}_{engine_slug}_{gender_slug}_{age_slug}_{voice_slug}_{timestamp}_{content_hash}.{extension}"
+        )
         
         # Generate audio file
-        speech_result = speech_service.text_to_speech(
+        speech_result = speech_service.synthesize(
             text=translated_text,
             lang_code=target_lang,
             filename=filename,
+            tts_engine=tts_engine,
             voice=selected_voice,
-            use_openai_preference=True
+            gender=voice_gender,
+            rate=rate,
+            pitch=pitch
         )
         
         if speech_result['success']:
@@ -156,6 +182,9 @@ def translate_and_speak():
                 'translated_text': translated_text,
                 'audio_url': f'/api/audio/{filename}',
                 'filename': filename,
+                'tts_engine': tts_engine,
+                'audio_base64': speech_result.get('audio_base64'),
+                'normalized_text': speech_result.get('normalized_text', translated_text),
                 'message': 'Translation and speech generation successful!'
             })
         else:
