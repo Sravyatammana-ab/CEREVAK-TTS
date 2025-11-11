@@ -9,6 +9,7 @@ import os
 import sys
 from datetime import datetime
 import hashlib
+import base64
 from dotenv import load_dotenv
 
 # Add project root to path
@@ -21,6 +22,7 @@ load_dotenv(env_path)
 
 from services.translation_service import TranslationService
 from services.speech_service import SpeechService
+from services.pitch_service import apply_pitch
 
 # Check if React build exists
 build_path = os.path.join('frontend', 'build')
@@ -99,7 +101,13 @@ def translate_and_speak():
         age_tone = data.get('age_tone', 'Adult')
         tts_engine = data.get('tts_engine', 'indic')
         rate = data.get('rate')
-        pitch = data.get('pitch')
+        raw_pitch = data.get('pitch', 0)
+        try:
+            pitch_change = int(raw_pitch)
+        except (TypeError, ValueError):
+            pitch_change = 0
+        pitch_change = max(-8, min(8, pitch_change))
+        provider_pitch = str(pitch_change) if pitch_change != 0 else None
 
         if tts_engine:
             tts_engine = tts_engine.strip().lower()
@@ -169,10 +177,26 @@ def translate_and_speak():
             voice=selected_voice,
             gender=voice_gender,
             rate=rate,
-            pitch=pitch
+            pitch=provider_pitch
         )
         
         if speech_result['success']:
+            final_file_path = speech_result.get('file_path')
+            final_filename = speech_result.get('filename')
+            final_audio_base64 = speech_result.get('audio_base64')
+
+            # Apply post-processing pitch adjustment before returning to the client.
+            if pitch_change != 0 and final_file_path:
+                try:
+                    processed_path = apply_pitch(final_file_path, pitch_change)
+                    final_file_path = processed_path
+                    final_filename = os.path.basename(processed_path)
+                    with open(processed_path, 'rb') as processed_file:
+                        processed_bytes = processed_file.read()
+                    final_audio_base64 = base64.b64encode(processed_bytes).decode('utf-8')
+                except Exception as exc:
+                    return jsonify({'error': f'Pitch adjustment failed: {exc}'}), 500
+
             return jsonify({
                 'success': True,
                 'source_lang': source_lang_code,
@@ -180,11 +204,12 @@ def translate_and_speak():
                 'target_lang': target_lang,
                 'target_lang_name': target_lang_name,
                 'translated_text': translated_text,
-                'audio_url': f'/api/audio/{filename}',
-                'filename': filename,
+                'audio_url': f'/api/audio/{final_filename}',
+                'filename': final_filename,
                 'tts_engine': tts_engine,
-                'audio_base64': speech_result.get('audio_base64'),
+                'audio_base64': final_audio_base64,
                 'normalized_text': speech_result.get('normalized_text', translated_text),
+                'pitch_adjustment': pitch_change,
                 'message': 'Translation and speech generation successful!'
             })
         else:
