@@ -63,10 +63,11 @@ def apply_pitch(audio_file_path: str, pitch_change: int) -> str:
     base_dir = os.path.dirname(audio_file_path)
     base_name, extension = os.path.splitext(os.path.basename(audio_file_path))
     extension = extension or ".mp3"
-    output_name = f"{base_name}_pitch_{pitch_change}{extension}"
+    output_name = f"{base_name}_pitch_{pitch_change:+d}{extension}"
     output_path = os.path.join(base_dir, output_name)
 
     pitch_ratio = 2 ** (pitch_change / 12.0)
+
     cmd = [
         ffmpeg_path,
         "-y",

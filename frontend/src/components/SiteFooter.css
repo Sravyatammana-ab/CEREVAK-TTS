@@ -1,0 +1,80 @@
+.site-footer {
+  margin-top: 4rem;
+  padding: 3rem 5% 3.5rem;
+  background: linear-gradient(180deg, rgba(4, 9, 30, 0.92), rgba(4, 8, 24, 0.92));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.5rem;
+}
+
+.site-footer__divider {
+  width: 100%;
+  max-width: 1040px;
+  height: 1px;
+  background: rgba(120, 146, 230, 0.22);
+}
+
+.site-footer__content {
+  display: grid;
+  gap: 1rem;
+  text-align: center;
+  color: rgba(214, 224, 255, 0.85);
+  max-width: 900px;
+}
+
+.site-footer__copy {
+  font-size: 0.95rem;
+  color: rgba(180, 196, 240, 0.8);
+}
+
+.site-footer__brand {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #f1f5ff;
+}
+
+.site-footer__tagline {
+  margin: 0 auto;
+  line-height: 1.7;
+  color: rgba(214, 224, 255, 0.82);
+  max-width: 640px;
+}
+
+.site-footer__contact {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.site-footer__contact a {
+  color: rgba(136, 214, 255, 0.95);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.site-footer__contact a:hover {
+  text-decoration: underline;
+}
+
+.site-footer__dot {
+  color: rgba(151, 165, 210, 0.8);
+}
+
+.site-footer__address {
+  font-style: normal;
+  color: rgba(172, 188, 233, 0.72);
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .site-footer {
+    padding: 2.5rem 8% 3rem;
+  }
+}
+
+

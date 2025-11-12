@@ -11,8 +11,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #051650;
-  color: #FFFFFF;
+  background: radial-gradient(circle at top, #0a1232 0%, #050d26 45%, #030819 100%);
+  color: #f2f5ff;
   min-height: 100vh;
 }
 

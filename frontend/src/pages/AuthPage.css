@@ -2,8 +2,8 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #051650;
-  color: #ffffff;
+  background: radial-gradient(circle at top, #0a1232 0%, #050d26 45%, #030819 100%);
+  color: #f2f5ff;
 }
 
 .auth__header {
@@ -33,7 +33,7 @@
 }
 
 .auth__brand img {
-  width: 140px;
+  width: 160px;
   height: auto;
 }
 
@@ -56,11 +56,11 @@
 }
 
 .auth__card {
-  background: rgba(10, 28, 92, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
-  padding: 2.5rem;
-  box-shadow: 0 32px 60px rgba(3, 12, 50, 0.45);
+  background: rgba(9, 21, 63, 0.78);
+  border: 1px solid rgba(130, 155, 255, 0.22);
+  border-radius: 20px;
+  padding: 2.75rem;
+  box-shadow: 0 36px 70px rgba(3, 8, 30, 0.5);
   display: grid;
   gap: 1.5rem;
 }
@@ -185,11 +185,11 @@
 .auth-modal__content {
   position: relative;
   width: min(520px, 92%);
-  background: rgba(10, 28, 92, 0.92);
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 40px 80px rgba(3, 12, 50, 0.6);
-  padding: 2.5rem;
+  background: rgba(9, 21, 63, 0.9);
+  border-radius: 22px;
+  border: 1px solid rgba(130, 155, 255, 0.25);
+  box-shadow: 0 44px 90px rgba(3, 8, 30, 0.55);
+  padding: 2.75rem;
   display: grid;
   gap: 1.5rem;
 }
@@ -226,9 +226,9 @@
 
 .auth-modal__field input {
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(130, 155, 255, 0.26);
   border-radius: 12px;
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1.1rem;
   color: #ffffff;
 }
 
@@ -275,6 +275,13 @@
   color: #ef9a9a;
   padding: 0.75rem 1rem;
   border-radius: 12px;
+}
+
+.auth-modal__note {
+  font-size: 0.85rem;
+  color: rgba(198, 205, 255, 0.72);
+  text-align: center;
+  line-height: 1.5;
 }
 
 @media (max-width: 768px) {

@@ -7,7 +7,7 @@ import './AuthPage.css';
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, signup, isAuthenticated } = useAuth();
+  const { login, signup, isAuthenticated, loading: authLoading } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -18,6 +18,13 @@ function LoginPage() {
       navigate('/dashboard', { replace: true });
     }
   }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (location.state?.openSignup) {
+      setShowSignup(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -50,10 +57,17 @@ function LoginPage() {
     setStatus(null);
     setLoading(true);
     try {
-      await signup(payload);
+      const { session, user } = await signup(payload);
       setShowSignup(false);
-      setStatus({ type: 'success', message: 'Account created! Redirecting to dashboard…' });
-      navigate('/dashboard', { replace: true });
+      if (session) {
+        setStatus({ type: 'success', message: 'Account created! Redirecting to dashboard…' });
+        navigate('/dashboard', { replace: true });
+      } else {
+        setStatus({
+          type: 'success',
+          message: `Account created for ${user?.email}. Please check your inbox to verify before signing in.`,
+        });
+      }
     } catch (error) {
       setStatus({
         type: 'error',
@@ -68,15 +82,14 @@ function LoginPage() {
     <div className="auth">
       <header className="auth__header">
         <Link to="/" className="auth__brand auth__brand--center">
-          <img src="/cerevyn_logo_text.png" alt="Cerevyn Solutions logo" />
-          <span>Cerevak</span>
+          <img src="/cerevyn_logo_with_text-removebg-preview.png" alt="Cerevyn Solutions logo" />
         </Link>
         <Link to="/" className="auth__link">
           Back to home
         </Link>
       </header>
 
-      <main className="auth__main auth__main--centered">
+      <main className="auth__main">
         <section className="auth__card auth__card--wide">
           <h1>Welcome to your Cerevak workspace</h1>
           <p>Sign in with your work email to access multilingual text-to-speech tools.</p>
@@ -106,7 +119,7 @@ function LoginPage() {
               />
             </label>
 
-            <button type="submit" className="auth__submit" disabled={loading}>
+            <button type="submit" className="auth__submit" disabled={loading || authLoading}>
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
@@ -122,7 +135,12 @@ function LoginPage() {
         </section>
       </main>
 
-      <SignupModal isOpen={showSignup} onClose={() => setShowSignup(false)} onSignup={handleSignup} loading={loading} />
+      <SignupModal
+        isOpen={showSignup}
+        onClose={() => setShowSignup(false)}
+        onSignup={handleSignup}
+        loading={loading || authLoading}
+      />
     </div>
   );
 }

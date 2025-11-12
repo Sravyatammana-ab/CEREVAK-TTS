@@ -6,8 +6,6 @@ Main Streamlit UI for the text-to-speech translation system.
 import streamlit as st
 import sys
 import os
-import hashlib
-from datetime import datetime
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -20,7 +18,7 @@ load_dotenv(env_path)  # Load .env file if it exists
 sys.path.append(project_root)
 
 from services.translation_service import TranslationService
-from services.speech_service import SpeechService
+from services.azure_tts_service import AZURE_VOICES, synthesize_speech
 
 
 # Page configuration
@@ -37,43 +35,39 @@ def get_translation_service():
     """Initialize and cache the translation service."""
     return TranslationService()
 
-@st.cache_resource
-def get_speech_service():
-    """Initialize and cache the speech service."""
-    return SpeechService(output_dir='output')
-
 translation_service = get_translation_service()
-speech_service = get_speech_service()
 
 
 # Language options for dropdown
 LANGUAGE_OPTIONS = {
-    'English': 'en',
-    'Hindi': 'hi',
-    'Urdu': 'ur',
-    'Assamese': 'as',
-    'Bengali': 'bn',
-    'Gujarati': 'gu',
-    'Kannada': 'kn',
-    'Malayalam': 'ml',
-    'Marathi': 'mr',
-    'Odia': 'or',
-    'Punjabi': 'pa',
-    'Tamil': 'ta',
-    'Telugu': 'te',
-    'Spanish': 'es',
-    'French': 'fr',
-    'German': 'de',
-    'Italian': 'it',
-    'Portuguese': 'pt',
-    'Russian': 'ru',
-    'Japanese': 'ja',
-    'Korean': 'ko',
-    'Chinese': 'zh',
-    'Arabic': 'ar',
-    'Nepali': 'ne',
-    'Sinhala': 'si'
+    "Assamese": "as",
+    "Bengali": "bn",
+    "English (India)": "en",
+    "Gujarati": "gu",
+    "Hindi": "hi",
+    "Kannada": "kn",
+    "Malayalam": "ml",
+    "Marathi": "mr",
+    "Odia": "or",
+    "Punjabi": "pa",
+    "Tamil": "ta",
+    "Telugu": "te",
+    "Urdu": "ur",
 }
+
+
+def _format_pitch(value: int) -> str:
+    """Convert slider semitone value to SSML string."""
+    if value == 0:
+        return "default"
+    return f"{value:+d}st"
+
+
+def _format_rate(value: int) -> str:
+    """Convert slider percentage to SSML rate string."""
+    if value == 0:
+        return "default"
+    return f"{value:+d}%"
 
 
 def main():
@@ -335,7 +329,7 @@ def main():
         target_language = st.selectbox(
             "Select Target Language",
             options=list(LANGUAGE_OPTIONS.keys()),
-            index=0,  # Default to English
+            index=list(LANGUAGE_OPTIONS.keys()).index("English (India)"),
             help="Choose the language you want to translate and speak"
         )
         
@@ -343,38 +337,40 @@ def main():
         
         # Voice Settings Section
         st.subheader("🎤 Voice Settings")
-        
-        # Gender selection
-        voice_gender = st.radio(
+        voice_options = AZURE_VOICES.get(target_language, {})
+        available_genders = [gender.title() for gender in voice_options.keys() if voice_options[gender]]
+        default_gender_index = 0
+        if available_genders and "Female" in available_genders:
+            default_gender_index = available_genders.index("Female")
+        selected_gender = st.radio(
             "Voice Gender",
-            options=["Female", "Male"],
-            index=0,  # Default to Female
-            help="Select the gender of the voice",
-            horizontal=True
+            options=available_genders or ["Female"],
+            index=default_gender_index if available_genders else 0,
+            horizontal=True,
         )
-        
-        # Age tone selection
-        age_tone = st.selectbox(
-            "Age Tone",
-            options=["Child", "Adult", "Senior"],
-            index=1,  # Default to Adult
-            help="Select the age tone of the voice"
+        selected_voice = voice_options.get(selected_gender.lower()) or next(iter(voice_options.values()), None)
+        if selected_voice:
+            st.caption(f"Azure neural voice: `{selected_voice}`")
+        else:
+            st.warning("⚠️ No Azure voice configured for this language; please update the configuration.")
+
+        pitch_value = st.slider(
+            "Pitch",
+            min_value=-3,
+            max_value=3,
+            value=0,
+            help="Adjust pitch (in semitones). Negative values lower the pitch, positive values raise it.",
         )
-        
-        st.markdown("<br>", unsafe_allow_html=True)  # Spacing
-        
-        # Speed Control Section
-        st.subheader("⚡ Speed Control")
-        speaking_speed = st.slider(
-            "Adjust Speaking Speed",
-            min_value=0.5,
-            max_value=2.0,
-            value=1.0,
-            step=0.1,
-            help="Control the playback speed (0.5x = slow, 1.0x = normal, 2.0x = fast)",
-            format="%.1fx"
+        st.caption(f"Current pitch: {_format_pitch(pitch_value)}")
+
+        speed_value = st.slider(
+            "Speed",
+            min_value=-50,
+            max_value=50,
+            value=0,
+            help="Adjust speaking speed (percentage). Negative values slow down the speech, positive values speed it up.",
         )
-        st.caption(f"Current speed: {speaking_speed:.1f}x")
+        st.caption(f"Current speed: {_format_rate(speed_value)}")
     
     # Generate Speech button
     st.markdown("---")
@@ -428,55 +424,30 @@ def main():
             # Step 3: Generate speech with unique filename
             st.info("🎵 Converting to speech...")
             
-            # Create hash of translated text + target language + voice settings for deduplication
             translated_text = translation_result['translated_text']
-            # Include voice settings in hash for proper deduplication
-            settings_hash = f"{voice_gender}_{age_tone}_{speaking_speed:.1f}"
-            content_hash = hashlib.md5(f"{translated_text}_{target_lang_code}_{settings_hash}".encode()).hexdigest()[:8]
-            
-            # Use language name (lowercase) instead of code
-            target_lang_name = target_language.lower()
-            
-            # Get voice based on gender and age tone
-            selected_voice = speech_service.get_voice_by_gender_and_age(voice_gender, age_tone)
-            
-            # Check if a file with the same hash already exists (same text + language + settings)
-            # Search for existing files with the same hash in the filename
-            output_dir = speech_service.output_dir
-            existing_file = None
-            if os.path.exists(output_dir):
-                for file in os.listdir(output_dir):
-                    if file.endswith('.mp3') and content_hash in file and target_lang_name in file:
-                        existing_file = os.path.join(output_dir, file)
-                        break
-            
-            if existing_file and os.path.exists(existing_file):
-                # File already exists, reuse it
-                st.info("♻️ Using existing audio file (same text, language, and settings)")
-                speech_result = {
-                    'file_path': existing_file,
-                    'filename': os.path.basename(existing_file),
-                    'success': True,
-                    'message': f'Reusing existing audio file: {os.path.basename(existing_file)}',
-                    'tts_engine': 'existing',
-                    'voice_used': selected_voice,
-                    'speed': speaking_speed
-                }
-            else:
-                # Generate new filename with timestamp, settings, and hash
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                speed_str = f"speed{speaking_speed:.1f}".replace('.', 'p')
-                filename = f"speech_{target_lang_name}_{voice_gender.lower()}_{age_tone.lower()}_{selected_voice}_{speed_str}_{timestamp}_{content_hash}.mp3"
-                
-                # Generate new audio file
-                speech_result = speech_service.text_to_speech(
+            pitch_ssml = _format_pitch(pitch_value)
+            rate_ssml = _format_rate(speed_value)
+
+            try:
+                audio_bytes = synthesize_speech(
                     text=translated_text,
-                    lang_code=target_lang_code,
-                    filename=filename,
                     voice=selected_voice,
-                    use_openai_preference=True,
-                    speed=speaking_speed
+                    pitch=pitch_ssml,
+                    rate=rate_ssml,
                 )
+            except Exception as exc:
+                st.error(f"❌ Azure speech synthesis failed: {exc}")
+                st.stop()
+            
+            filename = f"speech_{target_language.replace(' ', '_').lower()}.mp3"
+            speech_result = {
+                'success': True,
+                'audio_bytes': audio_bytes,
+                'filename': filename,
+                'voice_used': selected_voice,
+                'pitch': pitch_ssml,
+                'rate': rate_ssml,
+            }
         
         # Display results
         st.markdown("---")
@@ -499,23 +470,9 @@ def main():
             if speech_result['success']:
                 st.success("✅ Audio generated successfully!")
                 
-                # Display voice settings used
-                voice_info = speech_result.get('voice_used', 'unknown')
-                speed_info = speech_result.get('speed', 1.0)
-                engine_info = speech_result.get('tts_engine', 'unknown')
-                
-                # Get gender and age from voice
-                gender_display = voice_gender
-                age_display = age_tone
-                
-                # Quality indicator
-                quality = "HD Quality" if engine_info == 'openai' else "Standard Quality"
-                
-                st.info(f"**{gender_display}** • **{age_display} tone** • Speed: **{speed_info:.1f}x** • {quality} • TTS Engine: **{engine_info.upper()}**")
-                
+                audio_bytes = speech_result['audio_bytes']
+
                 # Display audio player
-                audio_file = open(speech_result['file_path'], 'rb')
-                audio_bytes = audio_file.read()
                 st.audio(audio_bytes, format='audio/mp3', start_time=0)
                 
                 # Download button
@@ -526,9 +483,6 @@ def main():
                     mime="audio/mpeg",
                     use_container_width=True
                 )
-                
-                # File path info
-                st.caption(f"File: `{speech_result['filename']}`")
             else:
                 st.error(f"❌ {speech_result['message']}")
 

@@ -113,6 +113,10 @@ function SignupModal({ isOpen, onClose, onSignup, loading = false }) {
               {loading ? 'Creating account…' : 'Create account'}
             </button>
           </div>
+          <p className="auth-modal__note">
+            A verification email will be sent to confirm your account. Once verified, you can sign in to access the
+            Cerevak dashboard.
+          </p>
         </form>
       </div>
     </div>
